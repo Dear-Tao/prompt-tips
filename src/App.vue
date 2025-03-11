@@ -67,15 +67,28 @@ import { ElConfigProvider } from 'element-plus'
 import { Loading, Setting, ChatDotRound, Delete } from '@element-plus/icons-vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import { useRouter } from 'vue-router'
-import { ref, watch, provide } from 'vue'
+import { ref, watch, provide, onMounted, onUnmounted } from 'vue'
 
 const router = useRouter()
 const activeTab = ref('text')
 const showClearButton = ref(false)
 
+// 检查是否有消息历史
+const checkMessagesHistory = () => {
+  if (typeof window !== 'undefined') {
+    const hasTextMessages = localStorage.getItem('chat_messages') && 
+                           JSON.parse(localStorage.getItem('chat_messages')).length > 0
+    const hasImageMessages = localStorage.getItem('image_chat_messages') && 
+                            JSON.parse(localStorage.getItem('image_chat_messages')).length > 0
+    
+    showClearButton.value = activeTab.value === 'text' ? hasTextMessages : hasImageMessages
+  }
+}
+
 // 可用的模型列表
 const availableModels = [
-  { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' }
+  { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
+  { label: 'Deepseek-R1', value: 'deepseek-r1' }
 ]
 
 // 当前选择的模型
@@ -110,10 +123,33 @@ watch(activeTab, (newVal) => {
   localStorage.setItem('active_tab', newVal)
   // 更新当前路由的query参数
   router.replace({ query: { ...router.currentRoute.value.query, tab: newVal } })
+  // 检查消息历史
+  checkMessagesHistory()
 })
 
 // 初始化加载Tab状态
 loadTabFromStorage()
+// 初始化检查消息历史
+checkMessagesHistory()
+
+// 监听消息变化事件
+onMounted(() => {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'chat_messages' || event.key === 'image_chat_messages') {
+      checkMessagesHistory()
+    }
+  })
+  
+  // 监听清空消息事件
+  window.addEventListener('clearMessages', () => {
+    showClearButton.value = false
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', null)
+  window.removeEventListener('clearMessages', null)
+})
 
 // 跳转到API配置页面
 const goToApiConfig = () => {

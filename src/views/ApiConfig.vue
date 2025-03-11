@@ -8,71 +8,69 @@
         </div>
       </template>
       
-      <!-- 月之暗面API配置 -->
-      <div class="api-section">
-        <h3 class="section-title">月之暗面 API</h3>
-        <el-form>
-          <el-form-item>
-            <el-input
-              v-model="moonshotApiKey"
-              type="password"
-              placeholder="请输入月之暗面API密钥"
-              show-password
-            >
-              <template #prefix>
-                <el-icon><Lock /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="validateAndSaveMoonshotApiKey" class="w-full" :disabled="!moonshotApiKey">
-              <el-icon><Check /></el-icon> 保存月之暗面API密钥
-            </el-button>
-          </el-form-item>
-        </el-form>
+      <el-tabs v-model="activeApiTab" class="api-tabs">
+        <el-tab-pane label="月之暗面 API" name="moonshot">
+          <el-form>
+            <el-form-item>
+              <el-input
+                v-model="moonshotApiKey"
+                type="password"
+                placeholder="请输入月之暗面API密钥"
+                show-password
+              >
+                <template #prefix>
+                  <el-icon><Lock /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="validateAndSaveMoonshotApiKey" class="w-full" :disabled="!moonshotApiKey">
+                <el-icon><Check /></el-icon> 保存月之暗面API密钥
+              </el-button>
+            </el-form-item>
+          </el-form>
+          
+          <div class="api-status" v-if="moonshotApiKey">
+            <el-tag type="success" v-if="isMoonshotApiKeyConfigured">
+              <el-icon><CircleCheck /></el-icon> 月之暗面API密钥已配置
+            </el-tag>
+            <el-tag type="warning" v-else>
+              <el-icon><Warning /></el-icon> 月之暗面API密钥未验证
+            </el-tag>
+          </div>
+        </el-tab-pane>
         
-        <div class="api-status" v-if="moonshotApiKey">
-          <el-tag type="success" v-if="isMoonshotApiKeyConfigured">
-            <el-icon><CircleCheck /></el-icon> 月之暗面API密钥已配置
-          </el-tag>
-          <el-tag type="warning" v-else>
-            <el-icon><Warning /></el-icon> 月之暗面API密钥未验证
-          </el-tag>
-        </div>
-      </div>
-      
-      <!-- DeepSeek API配置 -->
-      <div class="api-section">
-        <h3 class="section-title">DeepSeek API</h3>
-        <el-form>
-          <el-form-item>
-            <el-input
-              v-model="deepseekApiKey"
-              type="password"
-              placeholder="请输入DeepSeek API密钥"
-              show-password
-            >
-              <template #prefix>
-                <el-icon><Lock /></el-icon>
-              </template>
-            </el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="validateAndSaveDeepseekApiKey" class="w-full" :disabled="!deepseekApiKey">
-              <el-icon><Check /></el-icon> 保存DeepSeek API密钥
-            </el-button>
-          </el-form-item>
-        </el-form>
-        
-        <div class="api-status" v-if="deepseekApiKey">
-          <el-tag type="success" v-if="isDeepseekApiKeyConfigured">
-            <el-icon><CircleCheck /></el-icon> DeepSeek API密钥已配置
-          </el-tag>
-          <el-tag type="warning" v-else>
-            <el-icon><Warning /></el-icon> DeepSeek API密钥未验证
-          </el-tag>
-        </div>
-      </div>
+        <el-tab-pane label="DashScope API" name="dashscope">
+          <el-form>
+            <el-form-item>
+              <el-input
+                v-model="dashscopeApiKey"
+                type="password"
+                placeholder="请输入DashScope API密钥"
+                show-password
+              >
+                <template #prefix>
+                  <el-icon><Lock /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="validateAndSaveDashscopeApiKey" class="w-full" :disabled="!dashscopeApiKey">
+                <el-icon><Check /></el-icon> 保存DashScope API密钥
+              </el-button>
+            </el-form-item>
+          </el-form>
+          
+          <div class="api-status" v-if="dashscopeApiKey">
+            <el-tag type="success" v-if="isDashscopeApiKeyConfigured">
+              <el-icon><CircleCheck /></el-icon> DashScope API密钥已配置
+            </el-tag>
+            <el-tag type="warning" v-else>
+              <el-icon><Warning /></el-icon> DashScope API密钥未验证
+            </el-tag>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
       
       <div class="tips-section">
         <h3><el-icon><InfoFilled /></el-icon> 使用提示</h3>
@@ -106,13 +104,15 @@ import {
   ArrowLeft as Back
 } from '@element-plus/icons-vue'
 import { validateApiKey } from '../api/moonshot'
+import { validateApiKey as validateDeepseekApiKey } from '../api/deepseek'
 
 const router = useRouter()
 const moonshotApiKey = ref('')
-const deepseekApiKey = ref('')
+const dashscopeApiKey = ref('')
 const loading = ref(false)
 const isMoonshotApiKeyConfigured = ref(false)
-const isDeepseekApiKeyConfigured = ref(false)
+const isDashscopeApiKeyConfigured = ref(false)
+const activeApiTab = ref('moonshot')
 
 // 检查API密钥状态
 const checkApiKeyStatus = () => {
@@ -124,11 +124,11 @@ const checkApiKeyStatus = () => {
       isMoonshotApiKeyConfigured.value = true
     }
     
-    // 检查DeepSeek API密钥
-    const savedDeepseekApiKey = localStorage.getItem('deepseek_api_key')
-    if (savedDeepseekApiKey) {
-      deepseekApiKey.value = savedDeepseekApiKey
-      isDeepseekApiKeyConfigured.value = true
+    // 检查DashScope API密钥
+    const savedDashscopeApiKey = localStorage.getItem('dashscope_api_key')
+    if (savedDashscopeApiKey) {
+      dashscopeApiKey.value = savedDashscopeApiKey
+      isDashscopeApiKeyConfigured.value = true
     }
   }
 }
@@ -157,23 +157,23 @@ const validateAndSaveMoonshotApiKey = async () => {
   }
 }
 
-// 验证并保存DeepSeek API密钥
-const validateAndSaveDeepseekApiKey = async () => {
-  if (!deepseekApiKey.value) {
-    ElMessage.warning('请输入DeepSeek API密钥')
+// 验证并保存DashScope API密钥
+const validateAndSaveDashscopeApiKey = async () => {
+  if (!dashscopeApiKey.value) {
+    ElMessage.warning('请输入DashScope API密钥')
     return
   }
 
   loading.value = true
   try {
-    // TODO: 替换为实际的DeepSeek API验证函数
-    const isValid = true // 临时设置为true，等待API验证函数实现
+    // 使用DeepSeek API验证函数来验证DashScope密钥
+    const isValid = await validateDeepseekApiKey(dashscopeApiKey.value)
     if (isValid) {
-      localStorage.setItem('deepseek_api_key', deepseekApiKey.value)
-      isDeepseekApiKeyConfigured.value = true
-      ElMessage.success('DeepSeek API密钥配置成功')
+      localStorage.setItem('dashscope_api_key', dashscopeApiKey.value)
+      isDashscopeApiKeyConfigured.value = true
+      ElMessage.success('DashScope API密钥配置成功')
     } else {
-      ElMessage.error('DeepSeek API密钥验证失败')
+      ElMessage.error('DashScope API密钥验证失败')
     }
   } catch (error) {
     ElMessage.error('验证过程出错，请重试')
@@ -221,19 +221,26 @@ onMounted(() => {
   }
 }
 
-.api-section {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px dashed #e4e7ed;
+.api-tabs {
+  margin-bottom: 20px;
   
-  &:last-child {
-    border-bottom: none;
+  :deep(.el-tabs__header) {
+    margin-bottom: 20px;
   }
   
-  .section-title {
-    font-size: 1.1rem;
-    margin-bottom: 15px;
-    color: #606266;
+  :deep(.el-tabs__item) {
+    font-size: 15px;
+    padding: 0 20px;
+    height: 40px;
+    line-height: 40px;
+    
+    &.is-active {
+      font-weight: 600;
+    }
+  }
+  
+  :deep(.el-tabs__nav-wrap::after) {
+    height: 1px;
   }
 }
 

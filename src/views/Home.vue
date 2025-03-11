@@ -21,7 +21,21 @@
               <span class="role-badge">{{ msg.role === 'user' ? '您' : 'AI助手' }}</span>
               <span class="message-time">{{ new Date().toLocaleTimeString() }}</span>
             </div>
+            
+            <!-- 思考过程区域 -->
+            <div v-if="msg.role === 'assistant' && msg.thinking" class="thinking-section">
+              <div class="thinking-header" @click="toggleThinking(msg)">
+                <el-icon :class="{ 'is-rotate': msg.showThinking }"><ArrowDown /></el-icon>
+                <span>思考过程</span>
+              </div>
+              <div v-show="msg.showThinking" class="thinking-content">
+                <pre>{{ msg.thinking }}</pre>
+              </div>
+            </div>
+            
+            <!-- 回答内容 -->
             <pre>{{ msg.content }}</pre>
+            
             <div v-if="msg.role === 'assistant' && msg.content" class="action-buttons">
               <el-button size="small" type="primary" @click="copyToClipboard(msg.content)">
                 <el-icon><Document /></el-icon> 复制
@@ -53,7 +67,21 @@
               <span class="role-badge">{{ msg.role === 'user' ? '您' : 'AI助手' }}</span>
               <span class="message-time">{{ new Date().toLocaleTimeString() }}</span>
             </div>
+            
+            <!-- 思考过程区域 -->
+            <div v-if="msg.role === 'assistant' && msg.thinking" class="thinking-section">
+              <div class="thinking-header" @click="toggleThinking(msg)">
+                <el-icon :class="{ 'is-rotate': msg.showThinking }"><ArrowDown /></el-icon>
+                <span>思考过程</span>
+              </div>
+              <div v-show="msg.showThinking" class="thinking-content">
+                <pre>{{ msg.thinking }}</pre>
+              </div>
+            </div>
+            
+            <!-- 回答内容 -->
             <pre>{{ msg.content }}</pre>
+            
             <div v-if="msg.role === 'assistant' && msg.content" class="action-buttons">
               <el-button size="small" type="primary" @click="copyToClipboard(msg.content)">
                 <el-icon><Document /></el-icon> 复制
@@ -171,9 +199,11 @@ import {
   Promotion as Send,
   Delete,
   Picture,
-  CircleClose
+  CircleClose,
+  ArrowDown
 } from '@element-plus/icons-vue'
-import { generatePrompt as generateApiPrompt } from '../api/moonshot'
+import { generatePrompt as generateMoonshotPrompt } from '../api/moonshot'
+import { generatePrompt as generateDeepseekPrompt } from '../api/deepseek'
 
 const router = useRouter()
 const activeTab = inject('activeTab') // 注入App.vue提供的activeTab状态
@@ -183,6 +213,7 @@ const userInput = ref('')
 const loading = ref(false)
 const isGenerating = ref(false) // 控制生成状态
 const isApiKeyConfigured = ref(false)
+const currentModel = ref(localStorage.getItem('selected_model') || 'moonshot-v1-32k')
 const STORAGE_KEY = 'chat_messages' // 定义存储消息的键名
 const IMAGE_STORAGE_KEY = 'image_chat_messages' // 定义存储图片消息的键名
 // 当前请求的控制器
@@ -282,9 +313,17 @@ const clearMessages = () => {
 // 检查API密钥状态
 const checkApiKeyStatus = () => {
   if (typeof window !== 'undefined') {
-    const savedApiKey = localStorage.getItem('moonshot_api_key')
-    if (savedApiKey) {
-      isApiKeyConfigured.value = true
+    // 检查当前选择的模型类型
+    const modelType = currentModel.value.split('-')[0].toLowerCase()
+    
+    if (modelType === 'deepseek') {
+      // 检查DashScope API密钥
+      const dashscopeApiKey = localStorage.getItem('dashscope_api_key')
+      isApiKeyConfigured.value = !!dashscopeApiKey
+    } else {
+      // 默认检查Moonshot API密钥
+      const moonshotApiKey = localStorage.getItem('moonshot_api_key')
+      isApiKeyConfigured.value = !!moonshotApiKey
     }
   }
 }
@@ -296,14 +335,59 @@ const goToApiConfig = () => {
 
 // 更新消息内容
 const updateMessage = (index, content, isImageMessage = false) => {
+  console.log('更新消息:', index, content, isImageMessage)
+  
   const msgArray = isImageMessage ? imageMessages : messages
   if (index >= 0 && index < msgArray.value.length) {
+    console.log('当前消息内容:', msgArray.value[index].content)
+    
     // 创建消息的深拷贝，确保响应式更新
     const updatedMessages = [...msgArray.value]
-    updatedMessages[index] = {
-      ...updatedMessages[index],
-      content: updatedMessages[index].content + content
+    
+    // 处理不同类型的消息
+    if (typeof content === 'object') {
+      const messageType = content.type
+      const messageContent = content.content
+      
+      // 根据消息类型处理
+      if (messageType === 'thinking_start') {
+        // 开始思考，创建思考区域
+        updatedMessages[index] = {
+          ...updatedMessages[index],
+          thinking: messageContent,
+          content: '',
+          showThinking: true
+        }
+      } else if (messageType === 'thinking') {
+        // 添加思考内容
+        const thinking = updatedMessages[index].thinking || ''
+        updatedMessages[index] = {
+          ...updatedMessages[index],
+          thinking: thinking + messageContent
+        }
+      } else if (messageType === 'thinking_end') {
+        // 思考结束，不做特殊处理
+      } else if (messageType === 'answer_start') {
+        // 开始回答，不做特殊处理
+      } else if (messageType === 'answer') {
+        // 添加回答内容
+        updatedMessages[index] = {
+          ...updatedMessages[index],
+          content: updatedMessages[index].content + messageContent
+        }
+      } else if (messageType === 'answer_end') {
+        // 回答结束，不做特殊处理
+      }
+    } else {
+      // 兼容旧的字符串格式
+      updatedMessages[index] = {
+        ...updatedMessages[index],
+        content: updatedMessages[index].content + content
+      }
     }
+    
+    console.log('更新后的消息:', updatedMessages[index])
+    
     // 替换整个数组以触发响应式更新
     msgArray.value = updatedMessages
     
@@ -311,6 +395,8 @@ const updateMessage = (index, content, isImageMessage = false) => {
     nextTick(() => {
       scrollToBottom(isImageMessage)
     })
+  } else {
+    console.error('消息索引超出范围:', index, msgArray.value.length)
   }
 }
 
@@ -344,12 +430,38 @@ const generatePrompt = async () => {
     // 创建新的AbortController
     abortController = new AbortController()
     
-    await generateApiPrompt(userMessage.content, (content) => {
-      console.log('收到内容:', content)
-      updateMessage(messageIndex, content)
-      // 每次更新内容后保存到localStorage
-      saveMessagesToStorage()
-    }, abortController.signal)
+    // 根据当前选择的模型调用不同的API
+    const modelType = currentModel.value.split('-')[0].toLowerCase()
+    console.log('当前使用的模型类型:', modelType)
+    
+    if (modelType === 'deepseek') {
+      // 使用DashScope API调用Deepseek模型
+      console.log('使用DashScope API调用Deepseek模型')
+      await generateDeepseekPrompt(userMessage.content, (content) => {
+        console.log('Deepseek模型返回内容:', content)
+        if (typeof content === 'string') {
+          updateMessage(messageIndex, content)
+          // 每次更新内容后保存到localStorage
+          saveMessagesToStorage()
+        } else if (typeof content === 'object') {
+          // 处理可能的对象格式响应
+          console.log('收到对象格式响应:', content)
+          if (content.content) {
+            updateMessage(messageIndex, content.content)
+            saveMessagesToStorage()
+          }
+        }
+      }, abortController.signal)
+    } else {
+      // 默认使用Moonshot API
+      console.log('使用Moonshot API')
+      await generateMoonshotPrompt(userMessage.content, (content) => {
+        console.log('Moonshot模型返回内容:', content)
+        updateMessage(messageIndex, content)
+        // 每次更新内容后保存到localStorage
+        saveMessagesToStorage()
+      }, abortController.signal)
+    }
     
     console.log('Prompt生成完成')
   } catch (error) {
@@ -402,12 +514,38 @@ const generateImagePrompt = async () => {
     // 创建新的AbortController
     abortController = new AbortController()
     
-    await generateApiPrompt(promptRequest, (content) => {
-      console.log('收到内容:', content)
-      updateMessage(messageIndex, content, true)
-      // 每次更新内容后保存到localStorage
-      saveImageMessagesToStorage()
-    }, abortController.signal)
+    // 根据当前选择的模型调用不同的API
+    const modelType = currentModel.value.split('-')[0].toLowerCase()
+    console.log('图片Prompt - 当前使用的模型类型:', modelType)
+    
+    if (modelType === 'deepseek') {
+      // 使用DashScope API调用Deepseek模型
+      console.log('图片Prompt - 使用DashScope API调用Deepseek模型')
+      await generateDeepseekPrompt(promptRequest, (content) => {
+        console.log('图片Prompt - Deepseek模型返回内容:', content)
+        if (typeof content === 'string') {
+          updateMessage(messageIndex, content, true)
+          // 每次更新内容后保存到localStorage
+          saveImageMessagesToStorage()
+        } else if (typeof content === 'object') {
+          // 处理可能的对象格式响应
+          console.log('图片Prompt - 收到对象格式响应:', content)
+          if (content.content) {
+            updateMessage(messageIndex, content.content, true)
+            saveImageMessagesToStorage()
+          }
+        }
+      }, abortController.signal)
+    } else {
+      // 默认使用Moonshot API
+      console.log('图片Prompt - 使用Moonshot API')
+      await generateMoonshotPrompt(promptRequest, (content) => {
+        console.log('图片Prompt - Moonshot模型返回内容:', content)
+        updateMessage(messageIndex, content, true)
+        // 每次更新内容后保存到localStorage
+        saveImageMessagesToStorage()
+      }, abortController.signal)
+    }
     
     console.log('图片Prompt生成完成')
   } catch (error) {
@@ -486,10 +624,23 @@ onMounted(() => {
   checkApiKeyStatus()
   loadMessagesFromStorage() // 加载保存的消息
   window.addEventListener('scroll', handleScroll)
+  
+  // 监听模型变更事件
+  window.addEventListener('modelChange', (event) => {
+    currentModel.value = event.detail
+    console.log('模型已切换为:', currentModel.value)
+  })
+  
+  // 监听清空消息事件
+  window.addEventListener('clearMessages', () => {
+    clearMessages()
+  })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('modelChange', null)
+  window.removeEventListener('clearMessages', null)
 })
 
 // 监听消息变化，保存到localStorage
@@ -506,6 +657,16 @@ watch(imageMessages, () => {
 watch(activeTab, () => {
   saveActiveTabToStorage()
 })
+
+// 监听模型变化，重新检查API密钥状态
+watch(currentModel, () => {
+  checkApiKeyStatus()
+})
+
+// 折叠/展开思考过程
+const toggleThinking = (msg) => {
+  msg.showThinking = !msg.showThinking
+}
 </script>
 
 <style lang="scss" scoped>
@@ -752,6 +913,59 @@ watch(activeTab, () => {
 
 .main-content {
   padding-bottom: 120px;
+}
+
+.thinking-section {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background-color: #f0f9ff;
+  border: 1px dashed #a0cfff;
+  overflow: hidden;
+  
+  .thinking-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    background-color: #ecf5ff;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background-color: #d9ecff;
+    }
+    
+    .el-icon {
+      margin-right: 8px;
+      font-size: 14px;
+      transition: transform 0.3s ease;
+      
+      &.is-rotate {
+        transform: rotate(180deg);
+      }
+    }
+    
+    span {
+      font-size: 14px;
+      color: #409eff;
+      font-weight: 500;
+    }
+  }
+  
+  .thinking-content {
+    padding: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #606266;
+    }
+  }
 }
 </style>
 <style scoped>
