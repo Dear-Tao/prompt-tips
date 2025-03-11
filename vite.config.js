@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
-  base:'idgenerate',
+  base:'prompt-tips',
   plugins: [vue()],
   resolve: {
     alias: {
