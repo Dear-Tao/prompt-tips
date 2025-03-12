@@ -21,7 +21,7 @@
 - 构建工具：Vite
 - API集成：
   - 月之暗面 API
-  - DeepSeek API
+  - 阿里百炼(DeepSeek) API
 
 ## 快速开始
 
@@ -49,6 +49,9 @@ npm run build
    - 点击右上角「API配置」按钮
    - 输入并保存API密钥
    - 系统会自动验证API密钥的有效性
+   - 获取API密钥：
+     - [月之暗面](https://platform.moonshot.cn/console/api-keys)
+     - [阿里百炼(DeepSeek)](https://bailian.console.aliyun.com/?apiKey=1#/api-key)
 
 2. 生成代码Prompt
    - 选择「代码需求Prompt」标签页

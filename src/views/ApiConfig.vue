@@ -24,9 +24,14 @@
               </el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="validateAndSaveMoonshotApiKey" class="w-full" :disabled="!moonshotApiKey">
-                <el-icon><Check /></el-icon> 保存月之暗面API密钥
-              </el-button>
+              <div class="button-group">
+                <el-button type="primary" @click="validateAndSaveMoonshotApiKey" :disabled="!moonshotApiKey">
+                  <el-icon><Check /></el-icon> 保存密钥
+                </el-button>
+                <el-button type="info" @click="openMoonshotApiKeyPage">
+                  <el-icon><Link /></el-icon> 获取密钥
+                </el-button>
+              </div>
             </el-form-item>
           </el-form>
           
@@ -55,9 +60,14 @@
               </el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="validateAndSaveDashscopeApiKey" class="w-full" :disabled="!dashscopeApiKey">
-                <el-icon><Check /></el-icon> 保存阿里百炼 API密钥
-              </el-button>
+              <div class="button-group">
+                <el-button type="primary" @click="validateAndSaveDashscopeApiKey" :disabled="!dashscopeApiKey">
+                  <el-icon><Check /></el-icon> 保存密钥
+                </el-button>
+                <el-button type="info" @click="openDashscopeApiKeyPage">
+                  <el-icon><Link /></el-icon> 获取密钥
+                </el-button>
+              </div>
             </el-form-item>
           </el-form>
           
@@ -76,7 +86,8 @@
         <h3><el-icon><InfoFilled /></el-icon> 使用提示</h3>
         <ul>
           <li>API密钥用于访问AI服务</li>
-          <li>密钥只存放与本地浏览器中确保密钥安全</li>
+          <li>点击「获取密钥」按钮前往官方网站获取API密钥</li>
+          <li>密钥只存放于本地浏览器中，确保密钥安全</li>
           <li>配置成功后可返回首页生成Prompt</li>
         </ul>
       </div>
@@ -101,7 +112,8 @@ import {
   CircleCheckFilled as CircleCheck,
   WarningFilled as Warning,
   InfoFilled,
-  ArrowLeft as Back
+  ArrowLeft as Back,
+  Link
 } from '@element-plus/icons-vue'
 import { validateApiKey } from '../api/moonshot'
 import { validateApiKey as validateDeepseekApiKey } from '../api/deepseek'
@@ -191,6 +203,16 @@ const goBack = () => {
 onMounted(() => {
   checkApiKeyStatus()
 })
+
+// 打开月之暗面API密钥页面
+const openMoonshotApiKeyPage = () => {
+  window.open('https://platform.moonshot.cn/console/api-keys', '_blank')
+}
+
+// 打开阿里百炼API密钥页面
+const openDashscopeApiKeyPage = () => {
+  window.open('https://bailian.console.aliyun.com/?apiKey=1#/api-key', '_blank')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -200,7 +222,7 @@ onMounted(() => {
   padding: 20px;
   
   @media (max-width: 576px) {
-    padding: 10px;
+    padding: 10px 5px;
   }
 }
 
@@ -250,6 +272,17 @@ onMounted(() => {
   .api-status {
     margin: 20px 0;
     text-align: center;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    
+    .el-button {
+      flex: 1;
+      justify-content: center;
+    }
   }
   
   .tips-section {
@@ -305,6 +338,14 @@ onMounted(() => {
   
   .card-header h2 {
     font-size: 1.2rem;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    
+    .el-button {
+      width: 100%;
+    }
   }
 }
 </style>
