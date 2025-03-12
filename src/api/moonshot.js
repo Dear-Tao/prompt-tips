@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getSystemPrompt } from './promptTemplates'
 
 const MOONSHOT_API_URL = 'https://api.moonshot.cn/v1/chat/completions'
 
@@ -31,6 +32,7 @@ export const generatePrompt = async (requirement, onProgress, signal) => {
     // 创建一个 TextDecoder 实例用于解码响应数据
     const decoder = new TextDecoder()
     let buffer = ''
+    let isFirstContent = true
     
     const response = await fetch(MOONSHOT_API_URL, {
       method: 'POST',
@@ -44,9 +46,7 @@ export const generatePrompt = async (requirement, onProgress, signal) => {
         messages: [
           {
             role: 'system',
-            content: requirement.includes('图片Prompt') ? 
-              '你是一个专业的图片Prompt工程师，擅长根据用户的需求生成高质量的图片生成Prompt。你需要分析用户的需求，理解其核心意图和关键信息，然后生成一个结构清晰、指向明确、易于AI图像生成模型理解的Prompt。生成的Prompt应当包含明确的图片描述、风格要求、构图要素、色彩倾向等信息，以确保AI能够生成符合用户期望的图片。请以清晰的格式输出，包括主题、内容描述、风格、构图、色彩等要素。' : 
-              '你是一个专业的Prompt工程师，擅长根据用户的需求生成高质量的Prompt。你需要分析用户的需求，理解其核心意图和关键信息，然后生成一个结构清晰、指向明确、易于理解的Prompt。生成的Prompt应当包含明确的指令、必要的上下文信息、输出格式要求等要素，以确保AI能够准确理解并执行用户的意图。'
+            content: getSystemPrompt(requirement)
           },
           {
             role: 'user',
@@ -69,6 +69,9 @@ export const generatePrompt = async (requirement, onProgress, signal) => {
       throw new Error('Response body is null')
     }
 
+    // 通知前端开始思考过程
+    onProgress({ type: 'thinking_start', content: '正在思考中...' })
+    
     // 获取响应的可读流
     const reader = response.body.getReader()
     
@@ -100,6 +103,8 @@ export const generatePrompt = async (requirement, onProgress, signal) => {
         const data = trimmedLine.slice(5).trim()
         
         if (data === '[DONE]') {
+          // 通知前端回答结束
+          onProgress({ type: 'answer_end' })
           return true
         }
         
@@ -108,13 +113,24 @@ export const generatePrompt = async (requirement, onProgress, signal) => {
           const content = parsedData.choices?.[0]?.delta?.content
           
           if (content) {
-            onProgress(content)
+            if (isFirstContent) {
+              isFirstContent = false
+              // 通知前端思考过程结束，开始回答
+              onProgress({ type: 'thinking_end' })
+              onProgress({ type: 'answer_start' })
+            }
+            
+            // 将回答内容发送给前端
+            onProgress({ type: 'answer', content })
           }
         } catch (error) {
           console.error('解析数据错误:', error, '原始数据:', data)
         }
       }
     }
+    
+    // 通知前端回答结束
+    onProgress({ type: 'answer_end' })
     
     return true
   } catch (error) {

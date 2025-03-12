@@ -88,7 +88,8 @@ const checkMessagesHistory = () => {
 // 可用的模型列表
 const availableModels = [
   { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
-  { label: 'Deepseek-R1', value: 'deepseek-r1' }
+  { label: 'Deepseek-R1', value: 'deepseek-r1' },
+  { label: 'deepseek-r1-distill-llama-70b', value: 'deepseek-r1-distill-llama-70b' }
 ]
 
 // 当前选择的模型

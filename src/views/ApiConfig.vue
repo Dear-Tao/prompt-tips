@@ -40,13 +40,13 @@
           </div>
         </el-tab-pane>
         
-        <el-tab-pane label="DashScope API" name="dashscope">
+        <el-tab-pane label="阿里百炼 API" name="dashscope">
           <el-form>
             <el-form-item>
               <el-input
                 v-model="dashscopeApiKey"
                 type="password"
-                placeholder="请输入DashScope API密钥"
+                placeholder="请输入阿里百炼 API密钥"
                 show-password
               >
                 <template #prefix>
@@ -56,17 +56,17 @@
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="validateAndSaveDashscopeApiKey" class="w-full" :disabled="!dashscopeApiKey">
-                <el-icon><Check /></el-icon> 保存DashScope API密钥
+                <el-icon><Check /></el-icon> 保存阿里百炼 API密钥
               </el-button>
             </el-form-item>
           </el-form>
           
           <div class="api-status" v-if="dashscopeApiKey">
             <el-tag type="success" v-if="isDashscopeApiKeyConfigured">
-              <el-icon><CircleCheck /></el-icon> DashScope API密钥已配置
+              <el-icon><CircleCheck /></el-icon> 阿里百炼 API密钥已配置
             </el-tag>
             <el-tag type="warning" v-else>
-              <el-icon><Warning /></el-icon> DashScope API密钥未验证
+              <el-icon><Warning /></el-icon> 阿里百炼 API密钥未验证
             </el-tag>
           </div>
         </el-tab-pane>
@@ -76,7 +76,7 @@
         <h3><el-icon><InfoFilled /></el-icon> 使用提示</h3>
         <ul>
           <li>API密钥用于访问AI服务</li>
-          <li>请确保您的API密钥安全</li>
+          <li>密钥只存放与本地浏览器中确保密钥安全</li>
           <li>配置成功后可返回首页生成Prompt</li>
         </ul>
       </div>
@@ -160,20 +160,20 @@ const validateAndSaveMoonshotApiKey = async () => {
 // 验证并保存DashScope API密钥
 const validateAndSaveDashscopeApiKey = async () => {
   if (!dashscopeApiKey.value) {
-    ElMessage.warning('请输入DashScope API密钥')
+    ElMessage.warning('请输入阿里百炼API密钥')
     return
   }
 
   loading.value = true
   try {
-    // 使用DeepSeek API验证函数来验证DashScope密钥
+    // 使用DeepSeek API验证函数来验证阿里百炼密钥
     const isValid = await validateDeepseekApiKey(dashscopeApiKey.value)
     if (isValid) {
       localStorage.setItem('dashscope_api_key', dashscopeApiKey.value)
       isDashscopeApiKeyConfigured.value = true
-      ElMessage.success('DashScope API密钥配置成功')
+      ElMessage.success('阿里百炼API密钥配置成功')
     } else {
-      ElMessage.error('DashScope API密钥验证失败')
+      ElMessage.error('阿里百炼API密钥验证失败')
     }
   } catch (error) {
     ElMessage.error('验证过程出错，请重试')
