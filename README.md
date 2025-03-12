@@ -2,6 +2,8 @@
 
 基于AI驱动的高质量Prompt生成平台，支持代码需求Prompt和图片Prompt的智能生成。
 
+[![GitHub stars](https://img.shields.io/github/stars/Dear-Tao/prompt-tips.svg?style=flat&color=green)](https://github.com/Dear-Tao/prompt-tips)
+
 ## 功能特性
 
 - 🚀 支持代码需求Prompt生成

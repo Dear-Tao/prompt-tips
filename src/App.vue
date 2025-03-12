@@ -33,6 +33,9 @@
             <el-button type="primary" @click="goToApiConfig" class="settings-button">
               <el-icon><Setting /></el-icon> API配置
             </el-button>
+            <div @click="openGithub" class="github-button">
+              <img alt="GitHub stars" src="https://img.shields.io/github/stars/Dear-Tao/prompt-tips" class="github-badge">
+            </div>
           </div>
         </div>
       </el-header>
@@ -64,7 +67,7 @@
 
 <script setup>
 import { ElConfigProvider } from 'element-plus'
-import { Loading, Setting, ChatDotRound, Delete } from '@element-plus/icons-vue'
+import { Loading, Setting, ChatDotRound, Delete, Star } from '@element-plus/icons-vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import { useRouter } from 'vue-router'
 import { ref, watch, provide, onMounted, onUnmounted } from 'vue'
@@ -155,6 +158,10 @@ onUnmounted(() => {
 // 跳转到API配置页面
 const goToApiConfig = () => {
   router.push('/api-config')
+}
+
+const openGithub = () => {
+  window.open('https://github.com/Dear-Tao/prompt-tips', '_blank')
 }
 </script>
 
@@ -279,6 +286,25 @@ const goToApiConfig = () => {
       
       .el-icon {
         margin-right: 4px;
+      }
+    }
+    
+    .github-button {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      
+      &:hover {
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      .github-badge {
+        height: 20px;
       }
     }
   }
