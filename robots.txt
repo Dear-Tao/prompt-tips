@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dear-tao.github.io/prompt-tips/sitemap.xml
